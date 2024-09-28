@@ -62,11 +62,11 @@ coromega:when_called_by_terminal_menu({
     argument_hint = "",
     usage = "接入大模型的OMG菜单智能版,可以像魔法指令一样翻译人话为OMG指令.",
 }):start_new(function(input)
-    print(tongyi.tongyi("你好，我是用户，这是一个测试", "你好，我是系统，我没话要说"))
+    print("Helloworld!")
 end)
 
 coromega:when_called_by_game_menu({
-    triggers = { "aiomg" },
+    triggers = { "aiomg" , "AIOMG" , "魔法OMG" , "智能菜单" , "AI菜单" , "魔法菜单" },
     argument_hint = "",
     usage = "接入大模型的OMG菜单智能版,可以像魔法指令一样翻译人话为OMG指令.",
 })
@@ -75,17 +75,24 @@ coromega:when_called_by_game_menu({
     local caller = coromega:get_player_by_name(caller_name)
     local input = chat.msg
     local msg = table.concat(input, " ")
+    caller:say("§a插件作者: §6还原和平第一人§a.")
     if msg == "" then
-        msg = caller:ask("请输入你要用OMG菜单实现的功能.")
+        msg = caller:ask("§a请输入你要用OMG菜单实现的功能.")
     end
     caller:say("您的输入为: " .. msg)
-    caller:say("正在向通义大模型请求结果。当前模型：" .. Model)
+    caller:say("§a正在向通义大模型请求结果.\n当前使用的模型: §6" .. Model)
     local system_msg = coromega.config["系统提示语"]
     local result = tongyi(msg, system_msg)
-    caller:say("来自通义大模型的返回值: " .. result)
-    local omg_cmd = "omg " .. result
-    caller:say("已拼接为OMG指令: " .. omg_cmd)
-    coromega:send_ws_cmd(("execute as %s run tell @a\[tag=omega_bot\] %s"):format(caller_name, omg_cmd), false)
+    if result == "Error" then
+        caller:say("§c你的要求太奇怪了, OMG办不到!")
+    elseif result == nil then
+        caller:say("§c抱歉, 大模型发生错误!")
+    else
+        caller:say("§a来自通义大模型的返回值: " .. result)
+        local omg_cmd = "omg " .. result
+        caller:say("§a已拼接为OMG指令: §6" .. omg_cmd)
+        coromega:send_ws_cmd(("execute as %s run tell @a\[tag=omega_bot\] %s"):format(caller_name, omg_cmd), false)
+    end
 end)
 
 
