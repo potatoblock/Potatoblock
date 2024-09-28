@@ -39,7 +39,8 @@ end)
 coromega:when_receive_filtered_cqhttp_message_from_default():start_new(function(source, name, message)
     if message == "TPS" then
         local tps = math.floor (2000 * coromega:sync_ratio()) / 100
-        coromega:send_cqhttp_message_to_default("服务器TPS: " .. tostring(tps) .. "/20")
+        local tq = "服务器TPS: " .. tostring(tps) .. "/20"
+        coromega:send_cqhttp_message(source, tq)
     end
 end)
 
