@@ -1,0 +1,14 @@
+{
+	"名称": "tongyi.lua",
+	"描述": "无",
+	"是否禁用": false,
+	"来源": "LuaLoader",
+	"配置": {
+		"Version": "0.0.1",
+		"密钥":"sk-xxxxxxxxxxxx(此密钥不可用,请看下方说明自行申请APIKEY)",
+		"模型":"qwen-turbo-2024-09-19",
+		"说明":"",
+		"群内触发词": "ai ",
+		"模型选择说明":"时至今日2024.8.12,阿里的通义qwen-max模型0.04元/1000token,网址:https://help.aliyun.com/zh/dashscope/developer-reference/quick-start?spm=a2c4g.11186623.0.0.1963fa70ZLUjVU"
+	}
+}
