@@ -22,7 +22,7 @@ coromega:when_receive_filtered_cqhttp_message_from_default():start_new(function(
         local players_name = {}
         for i, v in ipairs(players) do
             local player_name = v:name()
-            players_name[#players_name + 1] = tostring(i) .. ". " .. player_name
+            players_name[#players_name + 1] = " " .. tostring(i) .. "." .. player_name
         end
         local players_list = table.concat(players_name, "\n")
         local players_length = #players
