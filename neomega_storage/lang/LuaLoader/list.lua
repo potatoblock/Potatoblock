@@ -27,7 +27,7 @@ coromega:when_receive_filtered_cqhttp_message_from_default():start_new(function(
         local players_list = table.concat(players_name, "\n")
         local players_length = #players
         local bot_name = coromega:bot_name()
-        local msg = ("当前 %s 人在线: \n%s\n机器人: %s\n服务器TPS %s"):format(players_length, players_list, bot_name, tps)
+        local msg = ("当前 %s 人在线: \n%s\n机器人: %s\n服务器TPS: %s / 20"):format(players_length, players_list, bot_name, tps)
         coromega:send_cqhttp_message(source, msg)
     end
 end)
