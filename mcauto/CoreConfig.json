@@ -1,0 +1,16 @@
+{
+    "chat_region": {
+        "x": 100,
+        "y": 800,
+        "width": 1200,
+        "height": 200
+    },
+    "chat_input_position": {
+        "x": 200,
+        "y": 900
+    },
+    "send_button_position": {
+        "x": 300,
+        "y": 940
+    }
+}
