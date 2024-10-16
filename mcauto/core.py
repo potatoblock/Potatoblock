@@ -4,17 +4,27 @@ import pyautogui
 import pytesseract
 import time
 import re
+import json
 
 # 下面这行的路径改成自己安装的tesseract的路径
 pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
 
-# 聊天栏区域，依据个人屏幕分辨率和游戏界面调整
-chat_region = (100, 800, 1200, 200)  # (x, y, width, height)
+# 加载配置文件
+def load_config(filepath):
+    with open(filepath, 'r') as f:
+        return json.load(f)
+
+# 加载配置
+config = load_config('CoreConfig.json')
+
+# 聊天栏区域，依据配置文件中的数据
+chat_region = (config['chat_region']['x'], config['chat_region']['y'], 
+               config['chat_region']['width'], config['chat_region']['height'])
 last_message = None  # 用于存储上一次的聊天消息
 
-# 修改以下位置以适配您的屏幕
-chat_input_position = (200, 900)  # 聊天栏的坐标(x, y)
-send_button_position = (300, 940)  # 发送按钮的坐标(x, y)
+# 从配置文件中获取坐标
+chat_input_position = (config['chat_input_position']['x'], config['chat_input_position']['y'])
+send_button_position = (config['send_button_position']['x'], config['send_button_position']['y'])
 
 def capture_chat_area():
     """截取聊天栏区域并返回图像"""
@@ -121,7 +131,7 @@ def main():
                 # 获取最后一条消息并处理
                 last_line = messages[-1]  # 最新的聊天行
                 handle_message(last_line)  # 处理消息
-                
+
             time.sleep(0.2)  # 每0.2秒检查一次
 
             # 测试发送消息，您可以根据需要调用
