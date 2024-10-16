@@ -3,7 +3,7 @@ import numpy as np
 import pyautogui
 import pytesseract
 import time
-import re  # 导入正则表达式模块
+import re
 
 # 下面这行的路径改成自己安装的tesseract的路径
 pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
@@ -11,6 +11,10 @@ pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
 # 聊天栏区域，依据个人屏幕分辨率和游戏界面调整
 chat_region = (100, 800, 1200, 200)  # (x, y, width, height)
 last_message = None  # 用于存储上一次的聊天消息
+
+# 修改以下位置以适配您的屏幕
+chat_input_position = (200, 900)  # 聊天栏的坐标(x, y)
+send_button_position = (300, 940)  # 发送按钮的坐标(x, y)
 
 def capture_chat_area():
     """截取聊天栏区域并返回图像"""
@@ -87,6 +91,23 @@ def handle_message(message):
             # 打印格式化的输出
             print(f"消息类型: {result['type']}, 玩家: {result['player']}, 内容: {result['message']}")
 
+def send_message(msg):
+    """发送消息或执行MC指令到聊天栏"""
+    # 点击聊天栏激活输入
+    pyautogui.click(chat_input_position)
+    time.sleep(0.2)  # 等待聊天栏激活
+
+    # 输入消息
+    pyautogui.typewrite(msg, interval=0.1)  # 使用 typewrite 输入消息
+
+    # 按下回车键
+    pyautogui.press('enter')
+    time.sleep(0.1)  # 等待一会以确保指令分隔完成
+
+    # 单击发送按钮
+    pyautogui.click(send_button_position)
+    print(f'消息发送: "{msg}"')
+
 # 主循环部分
 def main():
     global last_message
@@ -102,6 +123,9 @@ def main():
                 handle_message(last_line)  # 处理消息
                 
             time.sleep(0.2)  # 每0.2秒检查一次
+
+            # 测试发送消息，您可以根据需要调用
+            # send_message("Hello, World!")  # 解除注释以测试发送功能
     except KeyboardInterrupt:
         print("程序结束")
 
