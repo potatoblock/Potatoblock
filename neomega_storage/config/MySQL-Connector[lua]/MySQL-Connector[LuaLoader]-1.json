@@ -1,0 +1,17 @@
+{
+    "名称": "MySQL-Connector.lua",
+    "描述": "提供一个跨插件API用于建立与MySQL数据库的连接。",
+   	"是否禁用": false,
+	   "来源": "LuaLoader",
+   	"配置": {
+        "Version": "0.0.1",
+        "数据库配置": {
+            "host": "数据库地址",
+            "port": 3306,
+            "user": "用户名",
+            "password": "密码",
+            "database": "数据库名"
+        },
+        "使用指南": "调用＞local result = coromega:call_other_plugin_api('/mysql/connect', {'SQL语句'})＜，result即为返回值。返回值中包含一个表，内有 status 和 data或message 。status可能是success或error，是success时返回的表包含data，反之返回message。data是数据库返回值，message是数据库报错信息。如果服务连接失败，返回nil。"
+    }
+}
