@@ -19,7 +19,15 @@ local function connect(query)
         print("Error connecting with MySQL: ", error_message)
         return nil
     else
-        return response.body
+        local resp = json.decode(response.body)
+        local status = resp["status"]
+        if status == "success" then
+            local data = resp["data"]
+            return data
+        else
+            local msg = resp["message"]
+            return msg
+        end
     end
 end
 
