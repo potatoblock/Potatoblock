@@ -1,143 +1,119 @@
-import cv2
-import numpy as np
-import pyautogui
+#Author:Yeah(QQ:1246517085)
+import uiautomator2
+from PIL import Image
 import pytesseract
-import time
-import re
+import os
+import websocket
 import json
+import threading
+import base64
+from io import BytesIO
 
-# 下面这行的路径改成自己安装的tesseract的路径
-pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
+def image_to_base64(image):
+    # 将 PIL 图像转换为字节流
+    buffered = BytesIO()
+    image.save(buffered, format="JPEG")
+    # 将字节流编码为 base64 字符串
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    return img_str
 
-# 加载配置文件
-def load_config(filepath):
-    with open(filepath, 'r') as f:
-        return json.load(f)
+# 连接到设备
+d = uiautomator2.connect() # 自己写设备ID
 
-# 加载配置
-config = load_config('CoreConfig.json')
+# WebSocket 连接信息
+ws_url = "ws://0.0.0.0:8081/" # CQHTTP 正向WS地址
+access_token = "114514" # CQHTTP 连接密钥
+group_id = 593301642 # 群号
 
-# 聊天栏区域，依据配置文件中的数据
-chat_region = (config['chat_region']['x'], config['chat_region']['y'], 
-               config['chat_region']['width'], config['chat_region']['height'])
-last_message = None  # 用于存储上一次的聊天消息
+# 要查找的 RGB 值
+target_rgb = (5, 6, 11) # 聊天框栏的颜色
+last_text = None
 
-# 从配置文件中获取坐标
-chat_input_position = (config['chat_input_position']['x'], config['chat_input_position']['y'])
-send_button_position = (config['send_button_position']['x'], config['send_button_position']['y'])
+# 定义要裁剪的区域（左上角x, 左上角y, 右下角x, 右下角y）
+left, top, right, bottom = 247, 90, 1185, 915
 
-def capture_chat_area():
-    """截取聊天栏区域并返回图像"""
-    screenshot = pyautogui.screenshot(region=chat_region)
-    return np.array(screenshot)
+# WebSocket 连接函数
+def connect_websocket():
+    ws = websocket.WebSocket()
+    ws.connect(ws_url, header={"Authorization": f"Bearer {access_token}"})
+    return ws
 
-def recognize_chat_message(image):
-    """从聊天区域图像中识别并提取消息"""
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
-    text = pytesseract.image_to_string(thresh, config='--psm 6')
-    lines = text.strip().split('\n')
-    return lines
-
-def parse_message(message):
-    """解析消息并返回一个字典，包含type, player和message字段"""
-    player = ""
-    message_content = ""
-
-    # 处理悄悄话消息
-    if "悄悄地对你说" in message:
-        match = re.findall(r'(\w+) 悄悄地对你说: (.+)', message)
-        if match:
-            player, message_content = match[0]
-            return {
-                "type": "whisper",
-                "player": player,
-                "message": message_content
-            }
-
-    # 处理普通聊天消息
-    match = re.findall(r'"""(\w+)\n(.+)"""', message, re.DOTALL)
-    if match:
-        player, message_content = match[0]
-        return {
-            "type": "chat",
-            "player": player,
-            "message": message_content.strip()  # 去除多余的空格
+# 发送群消息的函数
+def send_group_msg(ws, group_id, message):
+    data = {
+        "action": "send_group_msg",
+        "params": {
+            "group_id": group_id,
+            "message": message
         }
-    
-    # 处理进服消息
-    if "加入了游戏" in message:
-        player = re.findall(r'(\w+) 加入了游戏', message)
-        if player:
-            return {
-                "type": "join",
-                "player": player[0],
-                "message": ""
-            }
+    }
+    ws.send(json.dumps(data))
 
-    # 处理退服消息
-    if "退出了游戏" in message:
-        player = re.findall(r'(\w+) 退出了游戏', message)
-        if player:
-            return {
-                "type": "leave",
-                "player": player[0],
-                "message": ""
-            }
-    
-    return None  # 没有匹配到任何内容
+# 聊天记录采集函数
+def collect_chat_records(ws):
+    global last_text
+    print("开始")
+    while True:
+        # 截取整个屏幕
+        screen = d.screenshot()
 
-def handle_message(message):
-    """处理聊天消息"""
-    global last_message
+        # 裁剪图片
+        cropped_img = screen.crop((left, top, right, bottom))
 
-    message = message.strip()
+        # 获取裁剪后图片的尺寸
+        width, height = cropped_img.size
 
-    if message != last_message:
-        last_message = message
-        result = parse_message(message)  # 解析消息
-        
-        if result:
-            # 打印格式化的输出
-            print(f"消息类型: {result['type']}, 玩家: {result['player']}, 内容: {result['message']}")
+        # 存储分割线的位置
+        split_positions = []
 
-def send_message(msg):
-    """发送消息或执行MC指令到聊天栏"""
-    # 点击聊天栏激活输入
-    pyautogui.click(chat_input_position)
-    time.sleep(0.2)  # 等待聊天栏激活
+        # 遍历图片的最右边一列
+        for y in range(height):
+            # 获取当前像素的 RGB 值
+            pixel = cropped_img.getpixel((width - 1, y))
+            # 检查是否匹配目标 RGB 值
+            if pixel == target_rgb:
+                split_positions.append(y)
 
-    # 输入消息
-    pyautogui.typewrite(msg, interval=0.1)  # 使用 typewrite 输入消息
+        # 分割图片并识别文字
+        try:
+            last_y = split_positions[-1]
+        except Exception:
+            continue
 
-    # 按下回车键
-    pyautogui.press('enter')
-    time.sleep(0.1)  # 等待一会以确保指令分隔完成
+        def say():
+            global last_text
+            # 如果还有剩余的部分，进行文字识别
+            if last_y < height:
+                box = (0, last_y, width, height)
+                record = cropped_img.crop(box)
+                text = pytesseract.image_to_string(record, lang='chi_sim', config='--psm 3')
+                if last_text == text or not text:
+                    return
+                last_text = text
+                print(text)
+                message = [{
+                    "type": "image",
+                    "data": {
+                        "file": "base64://" + image_to_base64(record)
+                    }
+                },
+                {
+                    "type": "text",
+                    "data": {
+                        "text": text
+                    }
+                }]
+               
+                send_group_msg(ws, group_id, message)
+        threading.Thread(target=say, args=(), daemon=True).start()
 
-    # 单击发送按钮
-    pyautogui.click(send_button_position)
-    print(f'消息发送: "{msg}"')
-
-# 主循环部分
+# 主函数
 def main():
-    global last_message
-
-    try:
-        while True:
-            image = capture_chat_area()  # 捕捉聊天区域
-            messages = recognize_chat_message(image)  # 识别聊天消息
-
-            if messages:
-                # 获取最后一条消息并处理
-                last_line = messages[-1]  # 最新的聊天行
-                handle_message(last_line)  # 处理消息
-
-            time.sleep(0.2)  # 每0.2秒检查一次
-
-            # 测试发送消息，您可以根据需要调用
-            # send_message("Hello, World!")  # 解除注释以测试发送功能
-    except KeyboardInterrupt:
-        print("程序结束")
+    ws = connect_websocket()
+    threading.Thread(target=collect_chat_records, args=(ws,), daemon=True).start()
+    while True:
+        # 保持主进程运行，避免 WebSocket 连接断开
+        pass
 
 if __name__ == "__main__":
     main()
